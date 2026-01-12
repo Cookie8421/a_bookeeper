@@ -22,7 +22,7 @@ app = Flask(__name__)
 
 DATA_DIR = os.getenv("DATA_DIR", "myRAG/data")
 os.makedirs(DATA_DIR, exist_ok=True)
-OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://host.docker.internal:11434")
 EXPENSES_FILE = os.path.join(DATA_DIR, "expense.txt")
 INDEX_FILE = os.path.join(DATA_DIR, "faiss_index.bin")          # ← 索引文件
 PROGRESS_FILE = os.path.join(DATA_DIR, "embedding_progress.txt")  # ← 进度文件
