@@ -12,13 +12,13 @@ from langchain_ollama import OllamaEmbeddings, OllamaLLM
 
 # ==================== 配置加载 ====================
 app = Flask(__name__)
-# CORS(app, resources={
-#     r"/api/*": {"origins": ["http://localhost:3000"]},  # 只允许 React 前端
-#     r"/add": {"origins": ["http://localhost:3000"]},
-#     r"/query": {"origins": ["http://localhost:3000"]},
-#     r"/summary": {"origins": ["http://localhost:3000"]},
-#     r"/health": {"origins": ["http://localhost:3000"]},
-# })
+CORS(app, resources={
+    r"/api/*": {"origins": ["http://localhost:3000", "http://localhost:8080"]},  # 只允许 React 前端
+    r"/add": {"origins": ["http://localhost:3000", "http://localhost:8080"]},
+    r"/query": {"origins": ["http://localhost:3000", "http://localhost:8080"]},
+    r"/summary": {"origins": ["http://localhost:3000", "http://localhost:8080"]},
+    r"/health": {"origins": ["http://localhost:3000", "http://localhost:8080"]},
+})
 
 DATA_DIR = os.getenv("DATA_DIR", "myRAG/data")
 os.makedirs(DATA_DIR, exist_ok=True)

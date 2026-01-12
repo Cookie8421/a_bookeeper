@@ -1,4 +1,4 @@
-bind = "127.0.0.1:8911"  # 只监听本地
+bind = "0.0.0.0:8911"  # 监听所有地址，方便容器端口映射和外部访问
 workers = 2
 worker_class = "sync"  # 或 "gevent" 如果需要异步
 timeout = 120
