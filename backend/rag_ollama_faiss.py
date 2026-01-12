@@ -20,7 +20,7 @@ app = Flask(__name__)
 #     r"/health": {"origins": ["http://localhost:3000"]},
 # })
 
-DATA_DIR = "myRAG/data"
+DATA_DIR = os.getenv("DATA_DIR", "myRAG/data")
 os.makedirs(DATA_DIR, exist_ok=True)
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 EXPENSES_FILE = os.path.join(DATA_DIR, "expense.txt")

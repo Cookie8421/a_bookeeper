@@ -2,12 +2,14 @@ version: '3.8'
 
 services:
   rag-fullstack:
-    build: .
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
     ports:
       - "8080:80"  # 前端访问端口
       - "8911:8911"  # 后端 API 端口（可选，用于调试）
     volumes:
-      - .//app/data  # 持久化账单数据
+      - ./data:/app/data  # 持久化账单数据
     environment:
       - DATA_DIR=/app/data
       - OLLAMA_BASE_URL=http://ollama:11434
@@ -20,7 +22,7 @@ services:
     ports:
       - "11434:11434"
     volumes:
-      - ollama_/root/.ollama
+      - ollama_data:/root/.ollama
     environment:
       - OLLAMA_HOST=0.0.0.0
       - OLLAMA_NUM_PARALLEL=4
@@ -34,4 +36,4 @@ services:
     "
 
 volumes:
-  ollama_
+  ollama_data:
