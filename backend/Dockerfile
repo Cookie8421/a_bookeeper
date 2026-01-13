@@ -17,6 +17,7 @@ RUN apt-get update && apt-get install -y \
     gcc \
     g++ \
     nginx \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # 复制 Nginx 配置

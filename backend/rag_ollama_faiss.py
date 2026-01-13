@@ -20,7 +20,10 @@ CORS(app, resources={
     r"/health": {"origins": ["http://localhost:3000", "http://localhost:8080"]},
 })
 
-DATA_DIR = os.getenv("DATA_DIR", "myRAG/data")
+# Detects Docker/Gunicorn environment
+is_docker = os.getenv("DATA_DIR") == "/app/data" or os.path.exists("/.dockerenv")
+is_gunicorn = "gunicorn" in os.environ.get("_", "")
+DATA_DIR = os.getenv("DATA_DIR", "data")
 os.makedirs(DATA_DIR, exist_ok=True)
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://host.docker.internal:11434")
 EXPENSES_FILE = os.path.join(DATA_DIR, "expense.txt")
@@ -49,7 +52,7 @@ llm = OllamaLLM(
     model="qwen3:4b",
     base_url=OLLAMA_BASE_URL,
     temperature=0.3,
-    stop=["\n\n"],  # ← 关键！防过早
+    # stop=["\n\n"],  # ← 关键！防过早
     keep_alive="5m",    # 保持模型加载
     stream=False,       # 强制非流式
 )
@@ -253,6 +256,61 @@ def get_context_by_ids(ids: list) -> str:
                 context_parts.append(f"[{i+1}] {text} （{parts[0].strip()}）")
     return "\n".join(context_parts)
 
+# ================ 直接调用 Ollama API（备用方案） ================
+def _call_ollama_direct(prompt: str) -> str:
+    """直接调用 Ollama API，绕过 LangChain 包装器（当 LangChain 返回空响应时使用）"""
+    try:
+        import requests
+        import json
+        
+        model_name = "qwen3:4b"  # 与上面 LLM 初始化保持一致
+        
+        print(f"🔄 直接调用 Ollama API，模型: {model_name}")
+        
+        # 调用 Ollama 的 generate API（与 curl 命令相同的方式）
+        url = f"{OLLAMA_BASE_URL}/api/generate"
+        payload = {
+            "model": model_name,
+            "prompt": prompt,
+            "stream": False,
+            "options": {
+                "temperature": 0.3,
+                "num_predict": 8192,
+            }
+        }
+        
+        print(f"请求 URL: {url}")
+        print(f"请求 payload (前500字符): {json.dumps(payload, ensure_ascii=False)[:500]}...")
+        
+        response = requests.post(url, json=payload, timeout=180)
+        response.raise_for_status()
+        
+        result = response.json()
+        print(f"Ollama API 响应状态: OK")
+        
+        # 提取响应文本
+        answer = result.get("response", "").strip()
+        
+        if not answer:
+            print("⚠️ Ollama API 返回空响应")
+            print(f"完整响应: {json.dumps(result, ensure_ascii=False, indent=2)}")
+            return "❌ Ollama API 返回空答案，请检查模型是否已加载。"
+        
+        print(f"✅ Ollama API 返回答案长度: {len(answer)}")
+        return answer
+        
+    except requests.exceptions.Timeout:
+        print("❌ Ollama API 请求超时")
+        return "❌ 请求超时，请稍后重试。"
+    except requests.exceptions.ConnectionError as e:
+        print(f"❌ 无法连接到 Ollama: {str(e)}")
+        return f"❌ 无法连接到 Ollama 服务 ({OLLAMA_BASE_URL})，请检查服务是否运行。"
+    except Exception as e:
+        print(f"❌ Ollama API 调用失败: {type(e).__name__}: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return f"❌ Ollama API 调用失败: {str(e)}"
+
 # ================ RAG 推理函数 ================
 def rag_query(question: str, k: int = 3) -> str:
     index = load_or_create_index()
@@ -288,7 +346,12 @@ def rag_query(question: str, k: int = 3) -> str:
 回答："""
     
     print("Prompt:", prompt)
-    return llm.invoke(prompt,options={"num_predict": 8192})
+    if is_docker or is_gunicorn:
+        # Use direct HTTP (works in Docker)
+        return _call_ollama_direct(prompt)
+    else:
+        # Use LangChain (works locally)
+        return llm.invoke(prompt, options={"num_predict": 8192})
 
 # ==================== Flask API 路由 ====================
 
@@ -336,6 +399,7 @@ def query_api():
 
     try:
         answer = rag_query(question)
+        print("answer:", answer)
         return jsonify({
             'question': question,
             'answer': answer,
@@ -385,7 +449,13 @@ def summary_api():
 3. 哪些种类占支出大头（占比最高）？
 请按清晰的格式回答。"""
     print("Prompt:", prompt)
-    summary = llm.invoke(prompt,options={"num_predict": 8192})
+    if is_docker or is_gunicorn:
+        # Use direct HTTP (works in Docker)
+        summary = _call_ollama_direct(prompt)
+    else:
+        # Use LangChain (works locally)
+        summary = llm.invoke(prompt, options={"num_predict": 8192})
+    print("summary:", summary)
     return jsonify({
         'summary': summary,
         'date_range': {'start': start_date, 'end': end_date},

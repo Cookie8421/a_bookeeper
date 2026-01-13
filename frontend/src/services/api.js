@@ -5,7 +5,7 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8911';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-//   timeout: 100000, // 100 秒超时
+  timeout: 180000, // 180 秒（3 分钟）超时，支持长时间运行的 LLM 请求（平均 40 秒）
 });
 
 // 添加账单
