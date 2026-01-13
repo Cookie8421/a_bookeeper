@@ -1,2 +1,2 @@
-last_processed_line = 14
-embedding_model_version =   nomic-embed-text@20251229
+last_processed_line = 15
+embedding_model_version =    nomic-embed-text@20251229

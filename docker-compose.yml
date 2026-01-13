@@ -13,4 +13,5 @@ services:
     environment:
       - DATA_DIR=/app/data
       - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      - TZ=${TZ:-Asia/Shanghai}  # 时区设置，可通过环境变量覆盖
     restart: unless-stopped

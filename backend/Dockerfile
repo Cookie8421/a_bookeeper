@@ -12,13 +12,18 @@ RUN npm run build
 # 使用 Python 作为基础镜像
 FROM python:3.11-slim
 
-# 安装系统依赖
+# 安装系统依赖（包括时区数据）
 RUN apt-get update && apt-get install -y \
     gcc \
     g++ \
     nginx \
     curl \
+    tzdata \
     && rm -rf /var/lib/apt/lists/*
+
+# 设置时区（默认：Asia/Shanghai，可通过环境变量覆盖）
+ENV TZ=Asia/Shanghai
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 # 复制 Nginx 配置
 COPY nginx/nginx.conf /etc/nginx/nginx.conf
